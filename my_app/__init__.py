@@ -1,6 +1,7 @@
 from flask import Flask
 from flask.ext.sqlalchemy import SQLAlchemy
 from flask.ext.login import LoginManager
+from flask.ext.admin import Admin
 
 
 app = Flask(__name__)
@@ -13,6 +14,10 @@ app.secret_key = 'some_random_key'
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'auth.login'
+
+import my_app.auth.views as views
+admin = Admin(app, index_view=views.MyAdminIndexView())
+admin.add_view(views.HelloView(name='Hello'))
 
 from my_app.auth.views import auth
 app.register_blueprint(auth)

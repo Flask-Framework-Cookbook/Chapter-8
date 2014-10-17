@@ -3,6 +3,7 @@ from flask import request, render_template, flash, redirect, url_for, \
     session, Blueprint, g, abort
 from flask.ext.login import current_user, login_user, logout_user, \
     login_required
+from flask.ext.admin import BaseView, expose, AdminIndexView
 from my_app import db, login_manager
 from my_app.auth.models import User, RegistrationForm, LoginForm, \
     AdminUserCreateForm, AdminUserUpdateForm
@@ -181,5 +182,19 @@ def user_delete_admin(id):
     user.delete()
 
     db.session.commit()
-    flash('User Deleted.')
+    flash('User Deleted.', 'info')
     return redirect(url_for('auth.users_list_admin'))
+
+
+class HelloView(BaseView):
+    @expose('/')
+    def index(self):
+        return self.render('some-template.html')
+
+    def is_accessible(self):
+        return current_user.is_authenticated() and current_user.is_admin()
+
+
+class MyAdminIndexView(AdminIndexView):
+    def is_accessible(self):
+        return current_user.is_authenticated() and current_user.is_admin()
