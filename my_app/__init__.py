@@ -18,6 +18,7 @@ login_manager.login_view = 'auth.login'
 import my_app.auth.views as views
 admin = Admin(app, index_view=views.MyAdminIndexView())
 admin.add_view(views.HelloView(name='Hello'))
+admin.add_view(views.UserAdminView(views.User, db.session))
 
 from my_app.auth.views import auth
 app.register_blueprint(auth)

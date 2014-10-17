@@ -1,5 +1,4 @@
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask.ext.admin import BaseView, expose
 from flask_wtf import Form
 from wtforms import TextField, PasswordField, BooleanField
 from wtforms.validators import InputRequired, EqualTo
@@ -60,9 +59,3 @@ class AdminUserCreateForm(Form):
 class AdminUserUpdateForm(Form):
     username = TextField('Username', [InputRequired()])
     admin = BooleanField('Is Admin ?')
-
-
-class HelloView(BaseView):
-    @expose('/')
-    def index(self):
-        return self.render('some-template.html')
