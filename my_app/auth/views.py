@@ -8,6 +8,7 @@ from my_app import db, login_manager
 from flask.ext.admin import BaseView, expose, AdminIndexView
 from flask.ext.admin.contrib.sqla import ModelView
 from flask.ext.admin.form import rules
+from flask.ext.admin.actions import ActionsMixin
 from my_app.auth.models import User, RegistrationForm, LoginForm, \
     AdminUserCreateForm, AdminUserUpdateForm, generate_password_hash, \
     CKTextAreaField
@@ -204,18 +205,18 @@ class MyAdminIndexView(AdminIndexView):
         return current_user.is_authenticated() and current_user.is_admin()
 
 
-class UserAdminView(ModelView):
+class UserAdminView(ModelView, ActionsMixin):
     column_searchable_list = ('username',)
     column_sortable_list = ('username', 'admin')
     column_exclude_list = ('pwdhash',)
     form_excluded_columns = ('pwdhash',)
     form_edit_rules = (
-        'username', 'admin',
+        'username', 'admin', 'roles', 'notes',
         rules.Header('Reset Password'),
         'new_password', 'confirm'
     )
     form_create_rules = (
-        'username', 'admin', 'notes', 'password'
+        'username', 'admin', 'roles', 'notes', 'password'
     )
     form_overrides = dict(notes=CKTextAreaField)
 
@@ -233,8 +234,12 @@ class UserAdminView(ModelView):
         return form_class
 
     def create_model(self, form):
+        if 'C' not in current_user.roles:
+            flash('You are not allowed to create users.', 'warning')
+            return
         model = self.model(
-            form.username.data, form.password.data, form.admin.data
+            form.username.data, form.password.data, form.admin.data,
+            form.notes.data
         )
         form.populate_obj(model)
         self.session.add(model)
@@ -242,6 +247,9 @@ class UserAdminView(ModelView):
         self.session.commit()
 
     def update_model(self, form, model):
+        if 'U' not in current_user.roles:
+            flash('You are not allowed to edit users.', 'warning')
+            return
         form.populate_obj(model)
         if form.new_password.data:
             if form.new_password.data != form.confirm.data:
@@ -251,3 +259,15 @@ class UserAdminView(ModelView):
         self.session.add(model)
         self._on_model_change(form, model, False)
         self.session.commit()
+
+    def delete_model(self, model):
+        if 'D' not in current_user.roles:
+            flash('You are not allowed to delete users.', 'warning')
+            return
+        super(UserAdminView, self).delete_model(model)
+
+    def is_action_allowed(self, name):
+        if name == 'delete' and 'D' not in current_user.roles:
+            flash('You are not allowed to delete users.', 'warning')
+            return False
+        return True
