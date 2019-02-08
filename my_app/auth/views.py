@@ -18,9 +18,9 @@ def register():
         flash('Your are already logged in.', 'info')
         return redirect(url_for('auth.home'))
 
-    form = RegistrationForm(request.form)
+    form = RegistrationForm()
 
-    if request.method == 'POST' and form.validate():
+    if form.validate_on_submit():
         username = request.form.get('username')
         password = request.form.get('password')
         existing_username = User.query.filter(
@@ -46,9 +46,9 @@ def register():
 
 @auth.route('/login', methods=['GET', 'POST'])
 def login():
-    form = LoginForm(request.form)
+    form = LoginForm()
 
-    if request.method == 'POST' and form.validate():
+    if form.validate_on_submit():
         username = request.form.get('username')
         password = request.form.get('password')
         existing_user = User.query.filter_by(username=username).first()
