@@ -10,7 +10,8 @@ from flask_admin import BaseView, expose, AdminIndexView
 from flask_admin.form import rules
 from flask_admin.contrib.sqla import ModelView
 from my_app.auth.models import User, RegistrationForm, LoginForm, \
-    AdminUserCreateForm, AdminUserUpdateForm
+    AdminUserCreateForm, AdminUserUpdateForm, generate_password_hash, \
+    CKTextAreaField
 
 auth = Blueprint('auth', __name__)
 
@@ -198,7 +199,6 @@ class UserAdminView(ModelView):
     column_sortable_list = ('username', 'admin')
     column_exclude_list = ('pwdhash',)
     form_excluded_columns = ('pwdhash',)
-
     form_edit_rules = (
         'username', 'admin',
         rules.Header('Reset Password'),
@@ -207,6 +207,10 @@ class UserAdminView(ModelView):
     form_create_rules = (
         'username', 'admin', 'notes', 'password'
     )
+    form_overrides = dict(notes=CKTextAreaField)
+
+    create_template = 'edit.html'
+    edit_template = 'edit.html'
 
     def is_accessible(self):
         return current_user.is_authenticated and current_user.is_admin()
@@ -233,7 +237,8 @@ class UserAdminView(ModelView):
             if form.new_password.data != form.confirm.data:
                 flash('Passwords must match')
                 return
-            model.pwdhash = generate_password_hash(form.new_password.data)
+            model.pwdhash = generate_password_hash(
+                form.new_password.data)
         self.session.add(model)
         self._on_model_change(form, model, False)
         self.session.commit()
