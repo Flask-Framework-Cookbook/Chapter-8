@@ -1,6 +1,7 @@
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_wtf import FlaskForm
-from wtforms import TextField, PasswordField, BooleanField
+from wtforms import TextField, PasswordField, BooleanField, widgets, \
+    TextAreaField
 from wtforms.validators import InputRequired, EqualTo
 from my_app import db
 
@@ -10,11 +11,13 @@ class User(db.Model):
     username = db.Column(db.String(100))
     pwdhash = db.Column(db.String())
     admin = db.Column(db.Boolean())
+    notes = db.Column(db.UnicodeText)
 
-    def __init__(self, username, password, admin=False):
+    def __init__(self, username, password, admin=False, notes=''):
         self.username = username
         self.pwdhash = generate_password_hash(password)
         self.admin = admin
+        self.notes = notes
 
     def is_admin(self):
         return self.admin
@@ -62,3 +65,13 @@ class AdminUserCreateForm(FlaskForm):
 class AdminUserUpdateForm(FlaskForm):
     username = TextField('Username', [InputRequired()])
     admin = BooleanField('Is Admin ?')
+
+
+class CKTextAreaWidget(widgets.TextArea):
+    def __call__(self, field, **kwargs):
+        kwargs.setdefault('class_', 'ckeditor')
+        return super(CKTextAreaWidget, self).__call__(field, **kwargs)
+
+
+class CKTextAreaField(TextAreaField):
+    widget = CKTextAreaWidget()
