@@ -12,12 +12,14 @@ class User(db.Model):
     pwdhash = db.Column(db.String())
     admin = db.Column(db.Boolean())
     notes = db.Column(db.UnicodeText)
+    roles = db.Column(db.String(4))
 
-    def __init__(self, username, password, admin=False, notes=''):
+    def __init__(self, username, password, admin=False, notes='', roles='R'):
         self.username = username
         self.pwdhash = generate_password_hash(password)
         self.admin = admin
         self.notes = notes
+        self.roles = self.admin and roles or ''
 
     def is_admin(self):
         return self.admin
