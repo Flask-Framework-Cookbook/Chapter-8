@@ -3,8 +3,10 @@ from flask import request, render_template, flash, redirect, url_for, \
     session, Blueprint, g, abort
 from flask_login import current_user, login_user, logout_user, \
     login_required
-from flask_admin import BaseView, expose, AdminIndexView
+from wtforms import PasswordField
 from my_app import db, login_manager
+from flask_admin import BaseView, expose, AdminIndexView
+from flask_admin.contrib.sqla import ModelView
 from my_app.auth.models import User, RegistrationForm, LoginForm, \
     AdminUserCreateForm, AdminUserUpdateForm
 
@@ -184,15 +186,31 @@ def user_delete_admin(id):
     return redirect(url_for('auth.users_list_admin'))
 
 
-class HelloView(BaseView):
-    @expose('/')
-    def index(self):
-        return self.render('some-template.html')
-
-    def is_accessible(self):
-        return current_user.is_authenticated and current_user.is_admin()
-
-
 class MyAdminIndexView(AdminIndexView):
     def is_accessible(self):
         return current_user.is_authenticated and current_user.is_admin()
+
+
+class UserAdminView(ModelView):
+    column_searchable_list = ('username',)
+    column_sortable_list = ('username', 'admin')
+    column_exclude_list = ('pwdhash',)
+    form_excluded_columns = ('pwdhash',)
+    form_edit_rules = ('username', 'admin')
+
+    def is_accessible(self):
+        return current_user.is_authenticated and current_user.is_admin()
+
+    def scaffold_form(self):
+        form_class = super(UserAdminView, self).scaffold_form()
+        form_class.password = PasswordField('Password')
+        return form_class
+
+    def create_model(self, form):
+        model = self.model(
+            form.username.data, form.password.data, form.admin.data
+        )
+        form.populate_obj(model)
+        self.session.add(model)
+        self._on_model_change(form, model, True)
+        self.session.commit()

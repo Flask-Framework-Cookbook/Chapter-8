@@ -1,6 +1,5 @@
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_wtf import FlaskForm
-from flask_admin import BaseView, expose
 from wtforms import StringField, PasswordField, BooleanField
 from wtforms.validators import InputRequired, EqualTo
 from my_app import db
@@ -63,9 +62,3 @@ class AdminUserCreateForm(FlaskForm):
 class AdminUserUpdateForm(FlaskForm):
     username = StringField('Username', [InputRequired()])
     admin = BooleanField('Is Admin ?')
-
-
-class HelloView(BaseView):
-    @expose('/')
-    def index(self):
-        return self.render('some-template.html')
