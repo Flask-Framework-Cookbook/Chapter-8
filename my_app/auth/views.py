@@ -1,4 +1,5 @@
 from functools import wraps
+from werkzeug.security import generate_password_hash
 from flask import request, render_template, flash, redirect, url_for, \
     session, Blueprint, g, abort
 from flask_login import current_user, login_user, logout_user, \
@@ -6,6 +7,7 @@ from flask_login import current_user, login_user, logout_user, \
 from wtforms import PasswordField
 from my_app import db, login_manager
 from flask_admin import BaseView, expose, AdminIndexView
+from flask_admin.form import rules
 from flask_admin.contrib.sqla import ModelView
 from my_app.auth.models import User, RegistrationForm, LoginForm, \
     AdminUserCreateForm, AdminUserUpdateForm
@@ -196,7 +198,15 @@ class UserAdminView(ModelView):
     column_sortable_list = ('username', 'admin')
     column_exclude_list = ('pwdhash',)
     form_excluded_columns = ('pwdhash',)
-    form_edit_rules = ('username', 'admin')
+
+    form_edit_rules = (
+        'username', 'admin',
+        rules.Header('Reset Password'),
+        'new_password', 'confirm'
+    )
+    form_create_rules = (
+        'username', 'admin', 'notes', 'password'
+    )
 
     def is_accessible(self):
         return current_user.is_authenticated and current_user.is_admin()
@@ -204,6 +214,8 @@ class UserAdminView(ModelView):
     def scaffold_form(self):
         form_class = super(UserAdminView, self).scaffold_form()
         form_class.password = PasswordField('Password')
+        form_class.new_password = PasswordField('New Password')
+        form_class.confirm = PasswordField('Confirm New Password')
         return form_class
 
     def create_model(self, form):
@@ -213,4 +225,15 @@ class UserAdminView(ModelView):
         form.populate_obj(model)
         self.session.add(model)
         self._on_model_change(form, model, True)
+        self.session.commit()
+
+    def update_model(self, form, model):
+        form.populate_obj(model)
+        if form.new_password.data:
+            if form.new_password.data != form.confirm.data:
+                flash('Passwords must match')
+                return
+            model.pwdhash = generate_password_hash(form.new_password.data)
+        self.session.add(model)
+        self._on_model_change(form, model, False)
         self.session.commit()
